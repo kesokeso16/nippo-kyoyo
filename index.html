@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>共用日報作成フォーム（8物件対応）</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4CAF50">
+  <link rel="apple-touch-icon" href="icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 10px;
+      margin: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    label, select, input, button, textarea {
+      font-size: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+    input[type="checkbox"] {
+      width: auto;
+      transform: scale(1.5);
+      margin-right: 6px;
+    }
+    fieldset {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 15px;
+    }
+    legend {
+      font-weight: bold;
+    }
+    button#submitBtn {
+      font-size: 20px;
+      padding: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      margin-top: 20px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+<h1>共用日報作成フォーム（8物件対応）</h1>
+<p>記入日：<span id="today"></span></p>
+
+<label>作業時間：<input type="time" id="startTime"> ～ <input type="time" id="endTime"></label>
+
+<fieldset>
+  <legend>作業メンバー</legend>
+  <label><input type="checkbox" name="worker" value="中尾">中尾</label>
+  <label><input type="checkbox" name="worker" value="相良">相良</label>
+  <label><input type="checkbox" name="worker" value="石川">石川</label>
+  <label><input type="checkbox" name="worker" value="永田">永田</label>
+  <label><input type="checkbox" name="worker" value="小串">小串</label>
+  <label><input type="checkbox" name="worker" value="渡部">渡部</label>
+  <label><input type="checkbox" name="worker" value="萩尾">萩尾</label>
+  <label><input type="checkbox" name="worker" value="城井">城井</label>
+  <label><input type="checkbox" name="worker" value="その他">その他</label>
+  <input type="text" id="workerOther" placeholder="その他の場合入力">
+</fieldset>
+
+<div id="propertySets"></div>
+
+<button id="submitBtn">📤 送信</button>
+
+<script>
+  document.getElementById("today").textContent = new Date().toLocaleDateString('ja-JP');
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyASFMoP61sW83YKtVkFRDNwtUtpE0G8naM",
+    authDomain: "projectofnakao.firebaseapp.com",
+    projectId: "projectofnakao"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const propertyList = ["九工大（飯塚）", "割子川", "鷹の巣４","青山", "別所",
+  "MGA","菅原", "桃園公園前", "祇園","前田", "カーサ宮の町", "茶屋町","川渕", "シティハイツ下到津", "南小倉", "カーサ森", 
+  "新高","千代ケ崎", "シーサイドヒルズ若松", "小芝","初音", "戸畑駅前東","戸畑駅前東２",
+  "下関レジデンスA・B", "大学町",
+  "アルテハイム小倉３", "砂津","赤坂", "金田", "古船場",
+  "ジュネス三萩野", "ルネッサンスTOEI","下到津", "下到津ヶ丘", "志徳",
+  "若園", "ラクシャリー春ケ丘","北方", "片野", "光町","その他"];
+  const clientList = ["アパマン", "ミクニ", "住宅流通センター", "その他"];
+  const durations = ["15分以上", "30分以上", "60分以上", "2時間以上"];
+  const notes = ["電灯交換", "草刈", "不法投棄回収"];
+
+  const container = document.getElementById("propertySets");
+
+  for (let i = 1; i <= 8; i++) {
+    const fs = document.createElement("fieldset");
+    fs.innerHTML = `
+      <legend>物件 ${i}</legend>
+
+      <label>物件名：
+        <select name="property${i}_select">
+          <option value="">選択してください</option>
+          ${propertyList.map(p => `<option value="${p}">${p}</option>`).join('')}
+        </select>
+        <input type="text" name="property${i}_other" placeholder="その他の場合入力">
+      </label>
+
+      <label>クライアント：
+        <select name="client${i}_select">
+          <option value="">選択してください</option>
+          ${clientList.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>
+        <input type="text" name="client${i}_other" placeholder="その他の場合入力">
+      </label>
+
+      <label>所要時間：</label>
+      ${durations.map(d => `<label><input type="checkbox" name="duration${i}" value="${d}">${d}</label>`).join(" ")}<br>
+
+      <label>備考：</label>
+      ${notes.map(n => `<label><input type="checkbox" name="note${i}" value="${n}">${n}</label>`).join(" ")}<br>
+      <input type="text" name="note${i}_other" placeholder="その他備考（自由記述）">
+    `;
+    container.appendChild(fs);
+  }
+
+  document.getElementById("submitBtn").addEventListener("click", () => {
+    const workers = [...document.querySelectorAll('input[name="worker"]:checked')].map(el => el.value);
+    const otherWorker = document.getElementById("workerOther").value;
+    if (otherWorker) workers.push(otherWorker);
+
+    const sets = [];
+    for (let i = 1; i <= 8; i++) {
+      const property = document.querySelector(`[name=property${i}_select]`).value || document.querySelector(`[name=property${i}_other]`).value;
+      const client = document.querySelector(`[name=client${i}_select]`).value || document.querySelector(`[name=client${i}_other]`).value;
+      const durations = [...document.querySelectorAll(`[name=duration${i}]:checked`)].map(el => el.value);
+      const notes = [...document.querySelectorAll(`[name=note${i}]:checked`)].map(el => el.value);
+      const noteOther = document.querySelector(`[name=note${i}_other]`).value;
+
+      if (property || client || durations.length > 0 || notes.length > 0 || noteOther) {
+        sets.push({ property, client, durations, notes, noteOther });
+      }
+    }
+
+    const data = {
+      timestamp: new Date(),
+      startTime: document.getElementById("startTime").value,
+      endTime: document.getElementById("endTime").value,
+      members: workers.join(", "),
+      sets
+    };
+
+    db.collection("nippo_kyoyo").add(data).then(() => {
+      alert("送信しました！");
+      location.reload();
+    }).catch(err => alert("送信エラー: " + err));
+  });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log('Service Worker registered:', reg))
+        .catch(err => console.error('Service Worker registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>
