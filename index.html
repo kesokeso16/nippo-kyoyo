@@ -51,7 +51,7 @@
   </style>
 </head>
 <body>
-<h1>共用日報作成フォームver2（8物件対応）</h1>
+<h1>共用日報作成フォームver2.1（所要時間変更済み）</h1>
 <p>記入日：<span id="today"></span></p>
 
 <label>作業時間：<input type="time" id="startTime"> ～ <input type="time" id="endTime"></label>
@@ -102,7 +102,7 @@
   "ジュネス三萩野", "ルネッサンスTOEI","下到津", "下到津ヶ丘", "志徳",
   "若園", "ラクシャリー春ケ丘","北方", "片野", "光町","その他"];
  
-  const clientList = ["アパマン", "ミクニ", "住宅流通管理センター","光優", "不動産のあらき", "福岡地所","賃貸ホームセンター", "あきよし不動産", "その他"];
+  const clientList = ["アパマン", "ミクニ", "住宅流通管理センター","光優", "不動産あらき", "福岡地所","賃貸ホームセンター", "あきよし不動産", "その他"];
   const durations = ["15分以上", "30分以上", "60分以上", "2時間以上"];
   const notes = ["電灯交換", "草刈", "不法投棄回収"];
 
@@ -129,8 +129,9 @@
         <input type="text" name="client${i}_other" placeholder="その他の場合入力">
       </label>
 
-      <label>所要時間：</label>
-      ${durations.map(d => `<label><input type="checkbox" name="duration${i}" value="${d}">${d}</label>`).join(" ")}<br>
+      <label>所要時間：
+        <input type="time" name="duration${i}_start"> ～ <input type="time" name="duration${i}_end">
+      </label>
 
       <label>備考：</label>
       ${notes.map(n => `<label><input type="checkbox" name="note${i}" value="${n}">${n}</label>`).join(" ")}<br>
@@ -148,12 +149,13 @@
     for (let i = 1; i <= 8; i++) {
       const property = document.querySelector(`[name=property${i}_select]`).value || document.querySelector(`[name=property${i}_other]`).value;
       const client = document.querySelector(`[name=client${i}_select]`).value || document.querySelector(`[name=client${i}_other]`).value;
-      const durations = [...document.querySelectorAll(`[name=duration${i}]:checked`)].map(el => el.value);
+      const durationStart = document.querySelector(`[name=duration${i}_start]`).value;
+      const durationEnd = document.querySelector(`[name=duration${i}_end]`).value;
       const notes = [...document.querySelectorAll(`[name=note${i}]:checked`)].map(el => el.value);
       const noteOther = document.querySelector(`[name=note${i}_other]`).value;
 
-      if (property || client || durations.length > 0 || notes.length > 0 || noteOther) {
-        sets.push({ property, client, durations, notes, noteOther });
+      if (property || client || durationStart || durationEnd || notes.length > 0 || noteOther) {
+        sets.push({ property, client, durationStart, durationEnd, notes, noteOther });
       }
     }
 
