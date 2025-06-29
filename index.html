@@ -51,7 +51,7 @@
   </style>
 </head>
 <body>
-<h1>共用日報作成フォームver2.1（所要時間変更済み）</h1>
+<h1>共用日報作成フォームver2.3（所要時間変更済み）</h1>
 <p>記入日：<span id="today"></span></p>
 
 <label>作業時間：<input type="time" id="startTime"> ～ <input type="time" id="endTime"></label>
@@ -74,6 +74,7 @@
 </fieldset>
 
 <div id="propertySets"></div>
+<button id="saveDraftBtn">💾 下書き保存</button>
 
 <button id="submitBtn">📤 送信</button>
 
@@ -180,6 +181,63 @@
         .catch(err => console.error('Service Worker registration failed:', err));
     });
   }
+  // saveDraftボタンイベント
+    document.getElementById("saveDraftBtn").addEventListener("click", () => {
+      const workers = [...document.querySelectorAll('input[name="worker"]:checked')].map(el => el.value);
+      const otherWorker = document.getElementById("workerOther").value;
+      if (otherWorker) workers.push(otherWorker);
+
+      const sets = [];
+      for (let i = 1; i <= 8; i++) {
+        const property = document.querySelector(`[name=property${i}_select]`).value || document.querySelector(`[name=property${i}_other]`).value;
+        const client = document.querySelector(`[name=client${i}_select]`).value || document.querySelector(`[name=client${i}_other]`).value;
+        const durationStart = document.querySelector(`[name=duration${i}_start]`).value;
+        const durationEnd = document.querySelector(`[name=duration${i}_end]`).value;
+        const notes = [...document.querySelectorAll(`[name=note${i}]:checked`)].map(el => el.value);
+        const noteOther = document.querySelector(`[name=note${i}_other]`).value;
+
+        if (property || client || durationStart || durationEnd || notes.length > 0 || noteOther) {
+          sets.push({ property, client, durationStart, durationEnd, notes, noteOther });
+        }
+      }
+
+      const draft = {
+        startTime: document.getElementById("startTime").value,
+        endTime: document.getElementById("endTime").value,
+        members: workers,
+        sets
+      };
+      localStorage.setItem('nippoDraft', JSON.stringify(draft));
+      alert('下書きを保存しました');
+    });
+
+    // ページ読み込み時に下書きを復元
+    window.addEventListener('load', () => {
+      const draft = JSON.parse(localStorage.getItem('nippoDraft'));
+      if (draft) {
+        document.getElementById("startTime").value = draft.startTime || "";
+        document.getElementById("endTime").value = draft.endTime || "";
+
+        document.querySelectorAll('input[name="worker"]').forEach(el => {
+          if (draft.members.includes(el.value)) el.checked = true;
+        });
+        document.getElementById("workerOther").value = draft.members.find(m => !document.querySelector(`input[name="worker"][value="${m}"]`)) || "";
+
+        draft.sets.forEach((s, i) => {
+          const idx = i + 1;
+          document.querySelector(`[name=property${idx}_select]`).value = s.property;
+          document.querySelector(`[name=property${idx}_other]`).value = s.property;
+          document.querySelector(`[name=client${idx}_select]`).value = s.client;
+          document.querySelector(`[name=client${idx}_other]`).value = s.client;
+          document.querySelector(`[name=duration${idx}_start]`).value = s.durationStart;
+          document.querySelector(`[name=duration${idx}_end]`).value = s.durationEnd;
+          document.querySelectorAll(`[name=note${idx}]`).forEach(el => {
+            if (s.notes.includes(el.value)) el.checked = true;
+          });
+          document.querySelector(`[name=note${idx}_other]`).value = s.noteOther;
+        });
+      }
+    });
 </script>
 </body>
 </html>
